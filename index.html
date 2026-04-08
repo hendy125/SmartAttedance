@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎉 Surprise Birthday</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;600;800&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            background: #22196d;
+            background: linear-gradient(135deg, #312a6b 0%, #2a7bd8 50%, #6565d6 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        /* Page Transitions */
+        .page {
+            display: none;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* ========== MUSIC PLAYER ========== */
+        .music-control {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .music-control:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .music-control.playing {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(245, 87, 108, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(245, 87, 108, 0.8); }
+        }
+
+        .music-icon {
+            font-size: 1.5rem;
+            animation: rotate 3s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .music-control.playing .music-icon {
+            animation-play-state: running;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .music-text {
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .music-visualizer {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+            height: 20px;
+        }
+
+        .bar {
+            width: 3px;
+            background: linear-gradient(to top, #f5576c, #f093fb);
+            border-radius: 2px;
+            animation: equalizer 0.8s ease-in-out infinite;
+        }
+
+        .music-control:not(.playing) .bar {
+            animation: none;
+            height: 4px !important;
+        }
+
+        .bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .bar:nth-child(2) { height: 15px; animation-delay: 0.1s; }
+        .bar:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+        .bar:nth-child(4) { height: 18px; animation-delay: 0.3s; }
+        .bar:nth-child(5) { height: 12px; animation-delay: 0.4s; }
+
+        @keyframes equalizer {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(1.5); }
+        }
+
+        /* Volume Slider */
+        .volume-container {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 15px;
+            display: none;
+            z-index: 999;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .volume-container.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .volume-slider {
+            width: 150px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(245, 87, 108, 0.5);
+        }
+
+        /* Welcome Overlay for Audio Context */
+        .welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            transition: opacity 0.5s;
+        }
+
+        .welcome-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .welcome-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            padding: 20px 50px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            animation: pulse 2s infinite;
+            transition: transform 0.3s;
+        }
+
+        .welcome-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Lyrics Display */
+        .lyrics-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        .lyrics-container.show {
+            opacity: 1;
+        }
+
+        .lyrics-text {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 30px;
+            color: #ffd700;
+            font-size: 1.2rem;
+            font-weight: 500;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700; }
+            to { text-shadow: 0 0 20px #ffd700, 0 0 30px #ff6b6b; }
+        }
+
+        /* ========== PAGE 1: PIN ENTRY ========== */
+        .pin-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 50px;
+            text-align: center;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pin-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .lock-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .pin-inputs {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .pin-digit {
+            width: 60px;
+            height: 70px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 2rem;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .pin-digit:focus {
+            border-color: #f5576c;
+            box-shadow: 0 0 20px rgba(245, 87, 108, 0.5);
+            transform: scale(1.1);
+        }
+
+        .pin-digit.filled {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: transparent;
+            animation: pulse 0.5s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .error-shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* ========== PAGE 2: BIRTHDAY WISH ========== */
+        .birthday-page {
+            background: linear-gradient(135deg, #667eea 0%, #852ae0 25%, #f093fb 50%, #f5576c 75%, #ffd89b 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .birthday-content {
+            text-align: center;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .birthday-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 5rem;
+            background: linear-gradient(45deg, #fff, #ffd700, #fff, #ff69b4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease-in-out infinite;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .birthday-message {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2rem;
+            color: white;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            animation: fadeInUp 1s ease 0.5s both;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Gift Box */
+        .gift-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 40px auto;
+            cursor: pointer;
+            perspective: 1000px;
+        }
+
+        .gift-box {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: float 3s ease-in-out infinite;
+            transition: transform 0.6s;
+        }
+
+        .gift-container:hover .gift-box {
+            transform: rotateY(20deg) rotateX(10deg) scale(1.1);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .gift-lid {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 40px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            border-radius: 5px 5px 0 0;
+            transform-origin: bottom;
+            transition: transform 0.6s;
+            z-index: 10;
+        }
+
+        .gift-container.open .gift-lid {
+            transform: rotateX(-120deg);
+        }
+
+        .gift-body {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .gift-ribbon-v {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 100%;
+            background: linear-gradient(to right, #ffd700, #ffed4e, #ffd700);
+        }
+
+        .gift-ribbon-h {
+            position: absolute;
+            top: 40px;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(to bottom, #ffd700, #ffed4e, #ffd700);
+        }
+
+        .gift-bow {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+            animation: wiggle 2s infinite;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: translateX(-50%) rotate(-5deg); }
+            50% { transform: translateX(-50%) rotate(5deg); }
+        }
+
+        .click-hint {
+            margin-top: 20px;
+            color: white;
+            font-size: 1.2rem;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ========== PAGE 3: MEMORY GALLERY ========== */
+        .gallery-page {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
+
+        .gallery-header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 1s ease;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gallery-title {
+            font-family: 'Pacifico', cursive;
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, #f093fb, #f5576c, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .gallery-subtitle {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.3rem;
+        }
+
+        /* Masonry Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .memory-card {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transform: translateY(50px);
+            opacity: 0;
+            animation: slideUp 0.8s ease forwards;
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+
+        .memory-card:nth-child(1) { animation-delay: 0.1s; }
+        .memory-card:nth-child(2) { animation-delay: 0.2s; }
+        .memory-card:nth-child(3) { animation-delay: 0.3s; }
+        .memory-card:nth-child(4) { animation-delay: 0.4s; }
+        .memory-card:nth-child(5) { animation-delay: 0.5s; }
+        .memory-card:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes slideUp {
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .memory-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-color: rgba(255,215,0,0.5);
+        }
+
+        .memory-img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: transform 0.5s;
+        }
+
+        .memory-card:hover .memory-img {
+            transform: scale(1.1);
+        }
+
+        .memory-caption {
+            padding: 20px;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .memory-date {
+            color: #ffd700;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .memory-text {
+            color: white;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .lightbox.active {
+            display: flex;
+            animation: fadeIn 0.3s;
+        }
+
+        .lightbox-img {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.2);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            font-size: 3rem;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .lightbox-close:hover {
+            transform: rotate(90deg);
+            color: #f5576c;
+        }
+
+        /* Floating Elements */
+        .floating-heart {
+            position: fixed;
+            font-size: 2rem;
+            animation: floatUp 10s linear infinite;
+            opacity: 0.6;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .birthday-title { font-size: 3rem; }
+            .gallery-title { font-size: 2.5rem; }
+            .gallery-grid { grid-template-columns: 1fr; }
+            .pin-digit { width: 50px; height: 60px; font-size: 1.5rem; }
+            .music-control { bottom: 20px; right: 20px; padding: 12px 20px; }
+            .lyrics-container { bottom: 80px; width: 90%; }
+        }
+
+        /* Loading Animation */
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: #f5576c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Welcome Overlay for Audio Context -->
+    <div class="welcome-overlay" id="welcomeOverlay">
+        <div style="font-size: 5rem; animation: bounce 2s infinite;">🎵</div>
+        <h1 style="font-family: 'Pacifico', cursive; font-size: 2.5rem; text-align: center;">Happy birthday my favorite girl!</h1>
+        <p style="color: rgba(255,255,255,0.8); text-align: center; max-width: 400px;">
+            walaupun singkat, terimakasih karena kemarin kamu telah hadir di hidupku:)
+        </p>
+        <button class="welcome-btn" onclick="startExperience()">
+            Klik disini! 🎉
+        </button>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="bgMusic" loop>
+        <!-- Ganti dengan URL lagu Anda. Contoh menggunakan lagu royalty-free -->
+        <source src="https://github.com/hendy125/fotoexperience/raw/refs/heads/main/WhatsApp%20Audio%202026-02-19%20at%2002.14.23.mp3" type="audio/mpeg">
+        <!-- Fallback untuk format lain -->
+        <source src="https://github.com/hendy125/fotoexperience/raw/refs/heads/main/WhatsApp%20Audio%202026-02-19%20at%2002.14.23.mp3" type="audio/ogg">
+        Browser Anda tidak mendukung pemutar audio.
+    </audio>
+
+    <!-- Music Control -->
+    <div class="music-control" id="musicControl" onclick="toggleMusic()">
+        <div class="music-icon">🎵</div>
+        <div class="music-text" id="musicText">Play Music</div>
+        <div class="music-visualizer">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <!-- Volume Control -->
+    <div class="volume-container" id="volumeContainer">
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" oninput="changeVolume(this.value)">
+        <div style="color: white; text-align: center; margin-top: 8px; font-size: 0.8rem;">Volume</div>
+    </div>
+
+    <!-- Lyrics Display -->
+    <div class="lyrics-container" id="lyricsContainer">
+        <div class="lyrics-text" id="lyricsText">🎵 Musik sedang diputar...</div>
+    </div>
+
+    <!-- Floating Background Elements -->
+    <div id="floating-elements"></div>
+
+    <!-- ========== PAGE 1: PIN ENTRY ========== -->
+    <div id="page1" class="page">
+        <div class="pin-container">
+            <div class="lock-icon">🔒</div>
+            <h2 style="font-size: 1.8rem; margin-bottom: 10px; color: white;">Masukkan Kode Rahasia</h2>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 30px;">Hint: Tanggal ulang tahun (DDMM)</p>
+            
+            <div class="pin-inputs" id="pinInputs">
+                <input type="password" maxlength="1" class="pin-digit" data-index="0" onkeyup="handlePinInput(this, 0)">
+                <input type="password" maxlength="1" class="pin-digit" data-index="1" onkeyup="handlePinInput(this, 1)">
+                <input type="password" maxlength="1" class="pin-digit" data-index="2" onkeyup="handlePinInput(this, 2)">
+                <input type="password" maxlength="1" class="pin-digit" data-index="3" onkeyup="handlePinInput(this, 3)">
+            </div>
+
+            <div class="loader" id="loader"></div>
+            <p id="error-msg" style="color: #ff6b6b; margin-top: 15px; opacity: 0; transition: opacity 0.3s;">Kode salah! Coba lagi.</p>
+        </div>
+    </div>
+
+    <!-- ========== PAGE 2: BIRTHDAY WISH ========== -->
+    <div id="page2" class="page birthday-page">
+        <canvas id="confetti-canvas" style="position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1;"></canvas>
+        
+        <div class="birthday-content">
+            <h1 class="birthday-title">Selamat Ulang Tahun yaa!</h1>
+            <p class="birthday-message">
+                Hari ini adalah hari spesialmu! Semoga tahun ini membawa lebih banyak tawa, 
+                cinta, dan momen indah yang tak terlupakan. Kamu adalah orang yang luar biasa 
+                dan pantas mendapatkan segala kebahagiaan di dunia ini, semoga kamu selalu bahagia dengan orang pilihanmu...! ✨🎂
+            </p>
+
+            <div class="gift-container" id="giftBox" onclick="openGift()">
+                <div class="gift-box">
+                    <div class="gift-lid">
+                        <div class="gift-ribbon-v" style="height: 40px;"></div>
+                    </div>
+                    <div class="gift-body">
+                        <div class="gift-ribbon-v"></div>
+                        <div class="gift-ribbon-h"></div>
+                    </div>
+                    <div class="gift-bow">🎀</div>
+                </div>
+            </div>
+
+            <p class="click-hint">✨ Klik kotak hadiah untuk membuka kejutan! ✨</p>
+        </div>
+    </div>
+
+    <!-- ========== PAGE 3: MEMORY GALLERY ========== -->
+    <div id="page3" class="page gallery-page">
+        <div class="gallery-header">
+            <h1 class="gallery-title">Kenangan Indah Kita dulu</h1>
+            <p class="gallery-subtitle">Setiap momen bersamamu adalah harta yang tak ternilai bagiku</p>
+        </div>
+
+        <div class="gallery-grid" id="galleryGrid">
+            <!-- Memory 1 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10%20(2).jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 Oktober 2025</div>
+                    <div class="memory-text">terimakasih karna telah menemani hari-hariku.</div>
+                </div>
+            </div>
+
+            <!-- Memory 2 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10%20(1).jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 Oktober 2025</div>
+                    <div class="memory-text">senyum mu sangat indah kala itu.</div>
+                </div>
+            </div>
+
+            <!-- Memory 3 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10%20(3).jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 Oktober 2025</div>
+                    <div class="memory-text">Cerita kita memang singkat, tapi aku selalu mengingatnya!</div>
+                </div>
+            </div>
+
+            <!-- Memory 4 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10%20(4).jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 Oktober 2025</div>
+                    <div class="memory-text">Aku selalu merasa kehilangan sandaran nyaman itu.</div>
+                </div>
+            </div>
+
+            <!-- Memory 5 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10%20(5).jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 November 2025</div>
+                    <div class="memory-text">terimakasih, hadirmu dulu selalu membuatku tenang.</div>
+                </div>
+            </div>
+
+            <!-- Memory 6 -->
+            <div class="memory-card" onclick="openLightbox(this)">
+                <img src="https://github.com/hendy125/fotoexperience/blob/main/WhatsApp%20Image%202026-02-19%20at%2001.04.10.jpeg?raw=true">
+                <div class="memory-caption">
+                    <div class="memory-date">📅 November 2025</div>
+                    <div class="memory-text">Terima kasih karna pernah menjadi bagian dari hidupku, aku sangat senang karna pernah menjalani hari-hari bersamamu!:)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <button onclick="goToPage(2)" style="margin-top: 50px; padding: 15px 40px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50px; color: white; cursor: pointer; font-size: 1.1rem; transition: all 0.3s;">
+            ← Kembali ke Ucapan
+        </button>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img src="" alt="Memory" class="lightbox-img" id="lightboxImg">
+    </div>
+
+    <script>
+        // PIN Configuration (Default: 0220 - Change this!)
+        const CORRECT_PIN = '0220';
+        let currentPin = '';
+        let isPlaying = false;
+        let musicStarted = false;
+
+        // Audio Context for better control
+        const audio = document.getElementById('bgMusic');
+        const musicControl = document.getElementById('musicControl');
+        const musicText = document.getElementById('musicText');
+        const volumeContainer = document.getElementById('volumeContainer');
+        const lyricsContainer = document.getElementById('lyricsContainer');
+
+        // Sample Lyrics Data (sync with your song duration)
+        const lyrics = [
+            { time: 0, text: "🎵 Musik dimulai..." },
+            { time: 10, text: "🎶 Selamat ulang tahun..." },
+            { time: 20, text: "✨ Semoga panjang umur..." },
+            { time: 30, text: "💕 sehat selalu..." },
+            { time: 40, text: "🎉 Bahagia selalu..." },
+            { time: 50, text: "❤️ Untukmu tercinta..." }
+        ];
+
+        // Start Experience
+        function startExperience() {
+            document.getElementById('welcomeOverlay').classList.add('hidden');
+            document.getElementById('page1').classList.add('active');
+            
+            // Try to autoplay music (browser might block)
+            playMusic();
+            
+            // Focus first input
+            setTimeout(() => {
+                document.querySelector('.pin-digit').focus();
+            }, 500);
+        }
+
+        // Music Controls
+        function toggleMusic() {
+            if (isPlaying) {
+                pauseMusic();
+            } else {
+                playMusic();
+            }
+        }
+
+        function playMusic() {
+            audio.play().then(() => {
+                isPlaying = true;
+                musicControl.classList.add('playing');
+                musicText.textContent = 'Now Playing';
+                musicStarted = true;
+                
+                // Show lyrics
+                lyricsContainer.classList.add('show');
+                syncLyrics();
+                
+                // Show volume control on long press
+                let pressTimer;
+                musicControl.addEventListener('mousedown', () => {
+                    pressTimer = setTimeout(() => {
+                        volumeContainer.classList.toggle('show');
+                    }, 800);
+                });
+                musicControl.addEventListener('mouseup', () => clearTimeout(pressTimer));
+                musicControl.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+                
+            }).catch(err => {
+                console.log('Autoplay blocked:', err);
+                musicText.textContent = 'Click to Play';
+            });
+        }
+
+        function pauseMusic() {
+            audio.pause();
+            isPlaying = false;
+            musicControl.classList.remove('playing');
+            musicText.textContent = 'Paused';
+            lyricsContainer.classList.remove('show');
+        }
+
+        function changeVolume(value) {
+            audio.volume = value / 100;
+        }
+
+        // Lyrics Sync (Simulated)
+        let lyricsInterval;
+        function syncLyrics() {
+            let currentIndex = 0;
+            const lyricsText = document.getElementById('lyricsText');
+            
+            lyricsInterval = setInterval(() => {
+                if (!isPlaying) return;
+                
+                // Simulate lyrics progression (replace with actual time sync if you know the song)
+                const currentTime = audio.currentTime;
+                
+                for (let i = lyrics.length - 1; i >= 0; i--) {
+                    if (currentTime >= lyrics[i].time) {
+                        if (lyricsText.textContent !== lyrics[i].text) {
+                            lyricsText.style.animation = 'none';
+                            setTimeout(() => {
+                                lyricsText.textContent = lyrics[i].text;
+                                lyricsText.style.animation = 'glow 2s ease-in-out infinite alternate';
+                            }, 10);
+                        }
+                        break;
+                    }
+                }
+            }, 1000);
+        }
+
+        // Floating Elements Generator
+        function createFloatingElements() {
+            const container = document.getElementById('floating-elements');
+            const emojis = ['❤️', '✨', '🎈', '🌟', '💫', '🎀', '💖', '🎵'];
+            
+            setInterval(() => {
+                const el = document.createElement('div');
+                el.className = 'floating-heart';
+                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                el.style.left = Math.random() * 100 + '%';
+                el.style.animationDuration = (Math.random() * 5 + 8) + 's';
+                el.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                container.appendChild(el);
+                
+                setTimeout(() => el.remove(), 10000);
+            }, 1000);
+        }
+
+        // PIN Input Handler
+        function handlePinInput(input, index) {
+            const inputs = document.querySelectorAll('.pin-digit');
+            
+            if (input.value) {
+                input.classList.add('filled');
+                currentPin += input.value;
+                
+                // Move to next input
+                if (index < 3) {
+                    inputs[index + 1].focus();
+                } else {
+                    // Check PIN
+                    verifyPin();
+                }
+            } else {
+                input.classList.remove('filled');
+                currentPin = currentPin.slice(0, -1);
+            }
+        }
+
+        function verifyPin() {
+            const loader = document.getElementById('loader');
+            const errorMsg = document.getElementById('error-msg');
+            const pinContainer = document.querySelector('.pin-container');
+            
+            loader.style.display = 'block';
+            
+            setTimeout(() => {
+                loader.style.display = 'none';
+                
+                if (currentPin === CORRECT_PIN) {
+                    // Success - Go to birthday page
+                    createConfettiExplosion();
+                    
+                    // Change music if needed (optional - to more upbeat song)
+                    // audio.src = "upbeat-song.mp3";
+                    
+                    setTimeout(() => goToPage(2), 500);
+                } else {
+                    // Error
+                    pinContainer.classList.add('error-shake');
+                    errorMsg.style.opacity = '1';
+                    currentPin = '';
+                    
+                    // Clear inputs
+                    document.querySelectorAll('.pin-digit').forEach(input => {
+                        input.value = '';
+                        input.classList.remove('filled');
+                    });
+                    
+                    setTimeout(() => {
+                        pinContainer.classList.remove('error-shake');
+                        errorMsg.style.opacity = '0';
+                    }, 2000);
+                }
+            }, 1000);
+        }
+
+        // Page Navigation
+        function goToPage(pageNum) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById('page' + pageNum).classList.add('active');
+            
+            if (pageNum === 2) {
+                startConfetti();
+                // Update lyrics for birthday page
+                document.getElementById('lyricsText').textContent = "🎉 Happy Birthday to You! 🎂";
+            }
+        }
+
+        // Gift Box Animation
+        function openGift() {
+            const giftBox = document.getElementById('giftBox');
+            giftBox.classList.add('open');
+            
+            // Play special sound effect (optional)
+            playSoundEffect();
+            
+            // Create explosion effect
+            for (let i = 0; i < 50; i++) {
+                createParticle(giftBox.getBoundingClientRect());
+            }
+            
+            // Change lyrics
+            document.getElementById('lyricsText').textContent = "🎁 Membuka kenangan indah kita dulu...";
+            
+            // Go to gallery after animation
+            setTimeout(() => {
+                goToPage(3);
+                document.getElementById('lyricsText').textContent = "📸 Mengenang momen bersamamu...";
+            }, 1500);
+        }
+
+        function playSoundEffect() {
+            // Create temporary audio for sound effect
+            const sfx = new Audio();
+            sfx.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGH0fPTgjMGHm7A7+OZURE';
+            sfx.volume = 0.3;
+            sfx.play().catch(() => {});
+        }
+
+        function createParticle(rect) {
+            const particle = document.createElement('div');
+            particle.className = 'confetti';
+            particle.style.left = (rect.left + rect.width/2) + 'px';
+            particle.style.top = (rect.top + rect.height/2) + 'px';
+            particle.style.background = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff'][Math.floor(Math.random() * 5)];
+            particle.style.borderRadius = '50%';
+            document.body.appendChild(particle);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 200 + 100;
+            
+            particle.animate([
+                { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                { transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity}px) scale(0)`, opacity: 0 }
+            ], {
+                duration: 1000,
+                easing: 'cubic-bezier(0, .9, .57, 1)',
+            }).onfinish = () => particle.remove();
+        }
+
+        // Confetti System
+        let confettiActive = false;
+        function startConfetti() {
+            if (confettiActive) return;
+            confettiActive = true;
+            
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const particles = [];
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#ffd700'];
+            
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+            
+            function animate() {
+                if (!confettiActive) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.rotation += p.rotationSpeed;
+                    
+                    if (p.y > canvas.height) {
+                        p.y = -10;
+                        p.x = Math.random() * canvas.width;
+                    }
+                    
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function createConfettiExplosion() {
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const el = document.createElement('div');
+                    el.className = 'confetti';
+                    el.style.left = '50%';
+                    el.style.top = '50%';
+                    el.style.background = ['#ff6b6b', '#feca57', '#48dbfb'][Math.floor(Math.random() * 3)];
+                    document.body.appendChild(el);
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = Math.random() * 300 + 200;
+                    
+                    el.animate([
+                        { transform: 'translate(0,0)', opacity: 1 },
+                        { transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity}px)`, opacity: 0 }
+                    ], { duration: 1500 }).onfinish = () => el.remove();
+                }, i * 10);
+            }
+        }
+
+        // Lightbox Functions
+        function openLightbox(card) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightboxImg');
+            
+            lightboxImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiM2NjdlZWEiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM3NjRiYTIiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyYWQpIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI0MCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7wn5OOPC90ZXh0Pjwvc3ZnPg==';
+            
+            lightbox.classList.add('active');
+            
+            // Pause music temporarily (optional)
+            // if (isPlaying) audio.pause();
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            // Resume music if needed
+            // if (musicStarted && !isPlaying) audio.play();
+        }
+
+        // Initialize
+        window.onload = function() {
+            createFloatingElements();
+        };
+
+        // Handle Enter key on PIN
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && currentPin.length === 4) {
+                verifyPin();
+            }
+        });
+
+        // Handle volume slider hide on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.music-control') && !e.target.closest('.volume-container')) {
+                volumeContainer.classList.remove('show');
+            }
+        });
+
+        // Space bar to toggle music
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleMusic();
+            }
+        });
+    </script>
+</body>
+</html>
