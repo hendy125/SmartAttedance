@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System - by Hendy</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Html5Qrcode Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- JsBarcode Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--dark-bg);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: 
+                radial-gradient(ellipse at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            animation: bgPulse 8s ease-in-out infinite;
+        }
+
+        @keyframes bgPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 8px 32px 0 rgba(0, 0, 0, 0.37),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        /* Neon Glow Effects */
+        .neon-glow {
+            box-shadow: 
+                0 0 20px rgba(102, 126, 234, 0.5),
+                0 0 40px rgba(102, 126, 234, 0.3),
+                0 0 60px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Scanner Container */
+        .scanner-wrapper {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .scanner-frame {
+            position: absolute;
+            inset: 0;
+            border: 2px solid transparent;
+            border-radius: 24px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea) border-box;
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) padding-box, 
+                linear-gradient(#fff 0 0);
+            mask: 
+                linear-gradient(#fff 0 0) padding-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderRotate 4s linear infinite;
+        }
+
+        @keyframes borderRotate {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        /* Scan Line Animation */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #38ef7d, transparent);
+            box-shadow: 0 0 20px #38ef7d, 0 0 40px #38ef7d;
+            animation: scanMove 2s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes scanMove {
+            0%, 100% { top: 10%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 90%; opacity: 0; }
+        }
+
+        /* Corner Markers */
+        .corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #667eea;
+            z-index: 10;
+        }
+
+        .corner-tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .corner-br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        /* Holographic Effect */
+        .holographic {
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            position: relative;
+            overflow: hidden;
+        }
+
+        .holographic::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            animation: holographicShine 3s infinite;
+        }
+
+        @keyframes holographicShine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        /* Status Badges */
+        .badge-hadir {
+            background: var(--success-gradient);
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .badge-terlambat {
+            background: var(--warning-gradient);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .badge-pulang {
+            background: var(--info-gradient);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .badge-izin {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            box-shadow: 0 4px 15px rgba(246, 211, 101, 0.4);
+        }
+
+        /* 3D Button Effects */
+        .btn-3d {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.3s ease;
+        }
+
+        .btn-3d:hover {
+            transform: translateY(-3px) rotateX(5deg);
+            box-shadow: 
+                0 10px 20px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.1) inset;
+        }
+
+        .btn-3d:active {
+            transform: translateY(-1px) rotateX(2deg);
+        }
+
+        /* Table Styling */
+        .custom-table {
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .custom-table tr {
+            transition: all 0.3s ease;
+        }
+
+        .custom-table tr:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        .custom-table td {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-table td:first-child {
+            border-radius: 12px 0 0 12px;
+        }
+
+        .custom-table td:last-child {
+            border-radius: 0 12px 12px 0;
+        }
+
+        /* Pulse Animation for Live Indicator */
+        .live-pulse {
+            animation: livePulse 2s infinite;
+        }
+
+        @keyframes livePulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(56, 239, 125, 0.7);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 20px rgba(56, 239, 125, 0);
+                transform: scale(1.05);
+            }
+        }
+
+        /* Floating Card Animation */
+        .float-card {
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
+
+        /* Success Check Animation */
+        .check-animation {
+            animation: checkPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes checkPop {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(0deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        /* Barcode Icon Animation */
+        .barcode-icon {
+            animation: barcodeScan 2s ease-in-out infinite;
+        }
+
+        @keyframes barcodeScan {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Navigation Active State */
+        .nav-active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.5);
+        }
+
+        /* Page Transition */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Copyright Footer */
+        .copyright-footer {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Generator Card Styles */
+        .generator-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        @media print {
+            body { background: white; }
+            .no-print { display: none !important; }
+            .generator-card { box-shadow: none; border: 2px solid #e2e8f0; }
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .mode-btn:not(.active):hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Working Hours Display */
+        .working-hours {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.1) 100%);
+            border: 1px solid rgba(79, 172, 254, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        /* Timeline */
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .timeline-dot::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .timeline-line {
+            position: absolute;
+            left: 5px;
+            top: 24px;
+            bottom: -16px;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <!-- Background Effects -->
+    <div class="bg-animation"></div>
+    <div class="particles" id="particles"></div>
+    
+    <!-- Main Container -->
+    <div class="relative z-10 max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+        
+        <!-- Header Section -->
+        <header class="glass-card rounded-3xl p-6 md:p-10 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+            
+            <div class="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-8">
+                <div class="flex items-center gap-6">
+                    <!-- Barcode Icon -->
+                    <div class="relative">
+                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl neon-glow transform rotate-3 hover:rotate-6 transition-transform duration-500 barcode-icon">
+                            <i class="fas fa-barcode text-4xl text-white"></i>
+                        </div>
+                        <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center live-pulse">
+                            <i class="fas fa-wifi text-xs text-black"></i>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h1 class="text-4xl md:text-5xl font-bold gradient-text font-['Space_Grotesk'] tracking-tight">
+                            Smart Attendance
+                        </h1>
+                        <p class="text-gray-400 mt-2 flex items-center gap-2 text-lg">
+                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            Sistem Absensi Masuk & Pulang
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Clock & Navigation -->
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <!-- Clock Widget -->
+                    <div class="glass-card rounded-2xl p-4 text-center min-w-[180px] float-card">
+                        <div id="clock" class="text-3xl font-bold font-['Space_Grotesk'] tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                            00:00:00
+                        </div>
+                        <div id="date" class="text-gray-400 mt-1 text-xs uppercase tracking-widest">
+                            Loading...
+                        </div>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="flex gap-2 glass-card rounded-2xl p-2">
+                        <button onclick="showPage('scan')" id="nav-scan" class="nav-active px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 text-sm">
+                            <i class="fas fa-camera"></i>
+                            <span class="hidden sm:inline">Scan</span>
+                        </button>
+                        <button onclick="showPage('generate')" id="nav-generate" class="px-5 py-2.5 rounded-xl font-semibold transition-all hover:bg-white/5 flex items-center gap-2 text-sm">
+                            <i class="fas fa-qrcode"></i>
+                            <span class="hidden sm:inline">Generate</span>
+                        </button>
+                        <button onclick="showPage('rekap')" id="nav-rekap" class="px-5 py-2.5 rounded-xl font-semibold transition-all hover:bg-white/5 flex items-center gap-2 text-sm">
+                            <i class="fas fa-chart-bar"></i>
+                            <span class="hidden sm:inline">Rekap</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- PAGE 1: SCAN BARCODE -->
+        <div id="page-scan" class="page active">
+            <!-- Mode Toggle: Masuk / Pulang -->
+            <div class="glass-card rounded-2xl p-2 mb-6 max-w-md mx-auto">
+                <div class="mode-toggle">
+                    <button onclick="setScanMode('masuk')" id="mode-masuk" class="mode-btn active flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Absen Masuk</span>
+                    </button>
+                    <button onclick="setScanMode('pulang')" id="mode-pulang" class="mode-btn flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Absen Pulang</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+                
+                <!-- Left Column: Scanner -->
+                <div class="xl:col-span-5 space-y-6">
+                    
+                    <!-- Scanner Card -->
+                    <div class="glass-card rounded-3xl p-6 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-2xl font-bold flex items-center gap-3">
+                                    <i class="fas fa-camera-retro text-blue-400"></i>
+                                    Scanner
+                                    <span id="scan-mode-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        MASUK
+                                    </span>
+                                </h2>
+                                <div class="flex items-center gap-2 px-4 py-2 rounded-full bg-black/30 border border-white/10">
+                                    <div id="status-dot" class="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50"></div>
+                                    <span id="status-text" class="text-sm font-medium text-gray-300">Offline</span>
+                                </div>
+                            </div>
+
+                            <!-- Scanner Viewport -->
+                            <div class="scanner-wrapper aspect-square relative mb-6 group">
+                                <div class="scanner-frame"></div>
+                                <div class="scan-line hidden" id="scan-line"></div>
+                                
+                                <!-- Corner Markers -->
+                                <div class="corner corner-tl"></div>
+                                <div class="corner corner-tr"></div>
+                                <div class="corner corner-bl"></div>
+                                <div class="corner corner-br"></div>
+                                
+                                <!-- Video Element -->
+                                <div id="reader" class="w-full h-full rounded-[22px] overflow-hidden bg-black/50"></div>
+                                
+                                <!-- Overlay States -->
+                                <div id="overlay-offline" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-[22px] backdrop-blur-sm">
+                                    <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center mb-4 shadow-2xl">
+                                        <i class="fas fa-barcode text-4xl text-gray-500"></i>
+                                    </div>
+                                    <p class="text-gray-400 text-lg font-medium">Scanner Tidak Aktif</p>
+                                    <p class="text-gray-600 text-sm mt-1">Klik "Mulai Scanner" untuk memulai</p>
+                                </div>
+
+                                <div id="overlay-success" class="absolute inset-0 hidden items-center justify-center bg-green-500/20 rounded-[22px] backdrop-blur-md z-20">
+                                    <div class="bg-white rounded-3xl p-8 shadow-2xl check-animation text-center">
+                                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center mb-4 mx-auto shadow-lg shadow-green-500/50">
+                                            <i class="fas fa-check text-4xl text-white"></i>
+                                        </div>
+                                        <h3 class="text-2xl font-bold text-gray-800 mb-1">Berhasil!</h3>
+                                        <p class="text-gray-500">Data tercatat</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Controls -->
+                            <div class="space-y-4">
+                                <select id="camera-select" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer hover:bg-black/40">
+                                    <option value="">🎥 Pilih Kamera Default</option>
+                                </select>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <button id="btn-start" onclick="startScanner()" class="btn-3d bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+                                        <i class="fas fa-play-circle text-xl"></i>
+                                        <span>Mulai</span>
+                                    </button>
+                                    <button id="btn-stop" onclick="stopScanner()" class="btn-3d hidden bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-600/30">
+                                        <i class="fas fa-stop-circle text-xl"></i>
+                                        <span>Stop</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Input Card -->
+                    <div class="glass-card rounded-3xl p-6 holographic">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-gray-300">
+                            <i class="fas fa-keyboard text-purple-400"></i>
+                            Input Manual NIPD
+                        </h3>
+                        <div class="flex gap-3">
+                            <div class="relative flex-1">
+                                <i class="fas fa-id-card absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                                <input type="text" id="manual-input" placeholder="Contoh: SIS001" 
+                                    class="w-full bg-black/30 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all uppercase tracking-wider font-mono"
+                                    onkeypress="if(event.key === 'Enter') processManualInput()">
+                            </div>
+                            <button onclick="processManualInput()" class="btn-3d bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 rounded-xl shadow-lg shadow-purple-600/30">
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="glass-card rounded-2xl p-4 text-center group hover:bg-white/5 transition-all cursor-pointer">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-sign-in-alt text-white text-lg"></i>
+                            </div>
+                            <div id="stat-masuk" class="text-3xl font-bold text-emerald-400 font-['Space_Grotesk']">0</div>
+                            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Sudah Masuk</div>
+                        </div>
+                        
+                        <div class="glass-card rounded-2xl p-4 text-center group hover:bg-white/5 transition-all cursor-pointer">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-600 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                <i class="fas fa-sign-out-alt text-white text-lg"></i>
+                            </div>
+                            <div id="stat-pulang" class="text-3xl font-bold text-blue-400 font-['Space_Grotesk']">0</div>
+                            <div class="text-xs text-gray-500 mt-1 uppercase tracking-wider">Sudah Pulang</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Attendance List -->
+                <div class="xl:col-span-7">
+                    <div class="glass-card rounded-3xl p-6 md:p-8 h-full relative overflow-hidden">
+                        <!-- Decorative Elements -->
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+                        <div class="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"></div>
+                        
+                        <div class="relative z-10">
+                            <!-- Header -->
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                                <div>
+                                    <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                                        <i class="fas fa-clipboard-list text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400"></i>
+                                        <span class="gradient-text">Daftar Kehadiran Hari Ini</span>
+                                    </h2>
+                                    <p class="text-gray-500 mt-1 text-sm">Data lengkap masuk & pulang</p>
+                                </div>
+                                
+                                <div class="flex gap-3">
+                                    <button onclick="exportData()" class="btn-3d bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/30 text-sm font-semibold">
+                                        <i class="fas fa-file-export"></i>
+                                        <span class="hidden sm:inline">Export</span>
+                                    </button>
+                                    <button onclick="clearAllData()" class="btn-3d bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg shadow-red-600/30 text-sm font-semibold">
+                                        <i class="fas fa-trash-alt"></i>
+                                        <span class="hidden sm:inline">Hapus</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Table Container -->
+                            <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                                <div class="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
+                                    <table class="w-full custom-table">
+                                        <thead class="sticky top-0 z-20">
+                                            <tr class="text-left">
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10">No</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10">Nipd</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10">Nama</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Masuk</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Pulang</th>
+                                                <th class="px-4 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="attendance-list" class="text-sm">
+                                            <tr id="empty-state">
+                                                <td colspan="7" class="px-6 py-16 text-center">
+                                                    <div class="flex flex-col items-center gap-4">
+                                                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center animate-pulse">
+                                                            <i class="fas fa-inbox text-4xl text-gray-600"></i>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-gray-400 text-lg font-medium">Belum ada data absensi</p>
+                                                            <p class="text-gray-600 text-sm mt-1">Scan barcode untuk memulai pencatatan</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Footer Info -->
+                            <div class="mt-6 flex justify-between items-center text-xs text-gray-500">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-database text-blue-400"></i>
+                                    <span>Data tersimpan secara lokal</span>
+                                </div>
+                                <div id="last-updated" class="flex items-center gap-2">
+                                    <i class="fas fa-sync-alt text-gray-600"></i>
+                                    <span>Terakhir update: --:--:--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Panel -->
+            <div id="recent-panel" class="hidden glass-card rounded-3xl p-6 border-l-4 border-green-500 slide-in mt-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+                        <i class="fas fa-user-check text-2xl text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-white mb-1" id="recent-title">Absensi Berhasil</h3>
+                        <div id="recent-content" class="text-gray-400"></div>
+                    </div>
+                    <div id="recent-time" class="text-3xl font-bold font-['Space_Grotesk'] text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: GENERATE BARCODE -->
+        <div id="page-generate" class="page">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Left: Generator Controls -->
+                <div class="space-y-6">
+                    <div class="glass-card rounded-3xl p-8">
+                        <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                            <i class="fas fa-qrcode text-purple-400"></i>
+                            Generator Barcode
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Nipd Siswa</label>
+                                <input type="text" id="gen-id" placeholder="Contoh: SIS001" 
+                                    class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all uppercase tracking-wider font-mono"
+                                    oninput="updatePreview()">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">Nama Siswa</label>
+                                <input type="text" id="gen-name" placeholder="Nama lengkap" 
+                                    class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-4 text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 transition-all"
+                                    oninput="updatePreview()">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">jurusan</label>
+                                <select id="gen-dept" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-purple-500 transition-all" onchange="updatePreview()">
+                                    <option value="IT">Rekayasa Perangkat Lunak</option>
+                                    <option value="HR">Teknik komputer dan Jaringan</option>
+                                    <option value="Finance">Teknik Sepeda Motor</option>
+                                    <option value="Marketing">Teknik Kendaraan Ringan</option>
+                                    <option value="Operations">Perbankan Syariah</option>
+                                </select>
+                            </div>
+
+                            <div class="pt-4 border-t border-white/10">
+                                <button onclick="generateBarcode()" class="btn-3d w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30">
+                                    <i class="fas fa-magic"></i>
+                                    Generate Barcode
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Select -->
+                    <div class="glass-card rounded-3xl p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-users text-blue-400"></i>
+                            Pilih Siswa
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                            <button onclick="selectEmployee('SIS001', 'Nabil Irsyad ', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Nabil Irsyad</div>
+                                <div class="text-xs text-gray-500">SIS001 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS002', 'Nawaf ', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Nawaf </div>
+                                <div class="text-xs text-gray-500">SIS002 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS003', 'Kyla Gibly', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Kyla Gibly</div>
+                                <div class="text-xs text-gray-500">SIS003 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS004', 'Perlita', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Perlita</div>
+                                <div class="text-xs text-gray-500">SIS004 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS005', 'Hendy', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Hendy</div>
+                                <div class="text-xs text-gray-500">SIS005 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS006', 'Bilal', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Bilal</div>
+                                <div class="text-xs text-gray-500">SIS006 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS007', 'Ridwan Badru', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Ridwan Badru</div>
+                                <div class="text-xs text-gray-500">SIS007 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS008', 'Risda Aulia', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Risda Aulia</div>
+                                <div class="text-xs text-gray-500">SIS008 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS009', 'Syaputri Awaliah', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Syaputri Awaliah</div>
+                                <div class="text-xs text-gray-500">SIS009 • RPL</div>
+                            </button>
+                            <button onclick="selectEmployee('SIS010', 'Rasya Aulia', 'RPL')" class="p-3 rounded-xl bg-black/20 hover:bg-white/10 transition-all text-left border border-white/5 hover:border-purple-500/30">
+                                <div class="font-semibold text-sm">Rasya Aulia</div>
+                                <div class="text-xs text-gray-500">SIS010 • RPL</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Barcode Preview -->
+                <div class="space-y-6">
+                    <div id="preview-container" class="generator-card text-center hidden">
+                        <div class="mb-6">
+                            <h3 id="preview-name" class="text-2xl font-bold text-slate-800" placeholder="Nama Siswa">Barcode Berhasil Dibuat</h3>
+                        </div>
+                        
+                        <!-- QR Code -->
+                        <div class="bg-slate-50 rounded-xl p-6 mb-6">
+                            <div id="qrcode-display"></div>
+                            <p class="text-xs text-slate-400 mt-3">Scan QR Code ini dengan aplikasi absensi</p>
+                        </div>
+                        
+                        <!-- 1D Barcode -->
+                        <div class="bg-white rounded-xl p-4 mb-6">
+                            <svg id="barcode-display"></svg>
+                            <p class="text-xs text-slate-400 mt-2">atau scan Barcode 1D</p>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3">
+                            <button onclick="downloadQR()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-download"></i> Download QR
+                            </button>
+                            <button onclick="downloadBarcode()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-download"></i> Download Barcode
+                            </button>
+                            <button onclick="window.print()" class="flex-1 bg-slate-600 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="preview-empty" class="generator-card text-center py-16">
+                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-barcode text-4xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700 mb-2">Belum Ada Barcode</h3>
+                        <p class="text-slate-500">Pilih siswa atau masukkan data untuk generate barcode</p>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="glass-card rounded-3xl p-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fas fa-info-circle text-blue-400"></i>
+                            Cara Penggunaan
+                        </h3>
+                        <ul class="space-y-3 text-sm text-gray-400">
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                                <span>Pilih siswa dari daftar atau masukkan data manual</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                                <span>Klik "Generate Barcode" untuk membuat QR Code dan Barcode 1D</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                                <span>Download atau print barcode untuk digunakan</span>
+                            </li>
+                            <li class="flex items-start gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+                                <span>Scan barcode di halaman "Scan" untuk mencatat kehadiran</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 3: REKAP (Ringkasan) -->
+        <div id="page-rekap" class="page">
+            <div class="glass-card rounded-3xl p-6 md:p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                            <i class="fas fa-chart-bar text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400"></i>
+                            <span class="gradient-text">Rekap Absensi</span>
+                        </h2>
+                        <p class="text-gray-500 mt-1 text-sm">Ringkasan kehadiran siswa</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <input type="date" id="rekap-date" class="bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" onchange="loadRekap()">
+                        <button onclick="exportRekap()" class="btn-3d bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg text-sm font-semibold">
+                            <i class="fas fa-file-excel"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="glass-card rounded-2xl p-4 text-center">
+                        <div class="text-3xl font-bold text-emerald-400" id="rekap-total">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Total Siswa</div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 text-center">
+                        <div class="text-3xl font-bold text-blue-400" id="rekap-masuk">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Sudah Masuk</div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 text-center">
+                        <div class="text-3xl font-bold text-cyan-400" id="rekap-pulang">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Sudah Pulang</div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 text-center">
+                        <div class="text-3xl font-bold text-amber-400" id="rekap-terlambat">0</div>
+                        <div class="text-xs text-gray-500 mt-1">Terlambat</div>
+                    </div>
+                </div>
+
+                <!-- Rekap Table -->
+                <div class="overflow-hidden rounded-2xl border border-white/5 bg-black/20">
+                    <div class="overflow-x-auto max-h-[600px] overflow-y-auto custom-scrollbar">
+                        <table class="w-full custom-table">
+                            <thead class="sticky top-0 z-20">
+                                <tr class="text-left">
+                                    <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10">No</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10">Siswa</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Jam Masuk</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Jam Pulang</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider bg-slate-900/90 backdrop-blur-sm border-b border-white/10 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rekap-list" class="text-sm">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 space-y-3 pointer-events-none"></div>
+
+    <!-- Audio -->
+    <audio id="beep-sound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    </audio>
+
+    <!-- Copyright Footer -->
+    <footer class="copyright-footer mt-12 py-8 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 md:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <i class="fas fa-barcode text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white">Smart Attendance</h4>
+                        <p class="text-xs text-gray-500">Sistem Absensi Modern</p>
+                    </div>
+                </div>
+                
+                <div class="text-center md:text-right">
+                    <p class="text-gray-400 text-sm flex items-center gap-2 justify-center md:justify-end">
+                        <i class="fas fa-code text-blue-400"></i>
+                        Copyright <span class="text-white font-semibold">by Hendy</span> © 2026
+                    </p>
+                    <p class="text-xs text-gray-600 mt-1">All rights reserved. Built with passion.</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-white/5 flex flex-wrap justify-center gap-6 text-xs text-gray-500">
+                <span class="flex items-center gap-1 hover:text-blue-400 transition-colors cursor-pointer">
+                    <i class="fas fa-shield-alt"></i> Secure System
+                </span>
+                <span class="flex items-center gap-1 hover:text-blue-400 transition-colors cursor-pointer">
+                    <i class="fas fa-bolt"></i> Real-time Processing
+                </span>
+                <span class="flex items-center gap-1 hover:text-blue-400 transition-colors cursor-pointer">
+                    <i class="fas fa-mobile-alt"></i> Responsive Design
+                </span>
+                <span class="flex items-center gap-1 hover:text-blue-400 transition-colors cursor-pointer">
+                    <i class="fas fa-code-branch"></i> v3.0.0
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Database Siswa
+        const employees = {
+            'SIS001': { name: 'Nabil Irsyad', jurusan: 'RPL', avatar: 'NI', color: 'from-blue-500 to-cyan-500' },
+            'SIS002': { name: 'Nawaf', jurusan: 'RPL', avatar: 'N', color: 'from-pink-500 to-rose-500' },
+            'SIS003': { name: 'Kyla gibly', jurusan: 'RPL', avatar: 'KG', color: 'from-emerald-500 to-teal-500' },
+            'SIS004': { name: 'Perlita', jurusan: 'RPL', avatar: 'P', color: 'from-purple-500 to-violet-500' },
+            'SIS005': { name: 'Hendy', jurusan: 'RPL', avatar: 'H', color: 'from-amber-500 to-orange-500' },
+            'SIS006': { name: 'Bilal', jurusan: 'RPL', avatar: 'B', color: 'from-indigo-500 to-blue-500' },
+            'SIS007': { name: 'Ridwan Badru', jurusan: 'RPL', avatar: 'RB', color: 'from-red-500 to-pink-500' },
+            'SIS008': { name: 'Risda Aulia', jurusan: 'RPL', avatar: 'RA', color: 'from-teal-500 to-cyan-500' },
+            'SIS009': { name: 'Syaputri Awaliah', jurusan: 'RPL', avatar: 'SA', color: 'from-fuchsia-500 to-purple-500' },
+            'SIS010': { name: 'Rasya Aulia', jurusan: 'RPL', avatar: 'RA', color: 'from-lime-500 to-green-500' }
+        };
+
+        let html5QrCode;
+        let isScanning = false;
+        let attendanceData = JSON.parse(localStorage.getItem('attendanceDataV2')) || [];
+        let lastScannedCode = null;
+        let lastScanTime = 0;
+        let currentGeneratedId = '';
+        let currentScanMode = 'masuk'; // 'masuk' or 'pulang'
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            updateClock();
+            setInterval(updateClock, 1000);
+            loadAttendanceData();
+            getCameras();
+            renderAttendanceList();
+            updateStatistics();
+            
+            // Set default date for rekap
+            document.getElementById('rekap-date').valueAsDate = new Date();
+            loadRekap();
+        });
+
+        // Page Navigation
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+            
+            document.getElementById('nav-scan').classList.toggle('nav-active', page === 'scan');
+            document.getElementById('nav-generate').classList.toggle('nav-active', page === 'generate');
+            document.getElementById('nav-rekap').classList.toggle('nav-active', page === 'rekap');
+            
+            if (page === 'generate' && isScanning) {
+                stopScanner();
+            }
+            
+            if (page === 'rekap') {
+                loadRekap();
+            }
+        }
+
+        // Scan Mode Toggle
+        function setScanMode(mode) {
+            currentScanMode = mode;
+            document.getElementById('mode-masuk').classList.toggle('active', mode === 'masuk');
+            document.getElementById('mode-pulang').classList.toggle('active', mode === 'pulang');
+            
+            const badge = document.getElementById('scan-mode-badge');
+            if (mode === 'masuk') {
+                badge.textContent = 'MASUK';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+            } else {
+                badge.textContent = 'PULANG';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30';
+            }
+        }
+
+        // Create Floating Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+            const dateStr = now.toLocaleDateString('id-ID', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            
+            document.getElementById('clock').textContent = timeStr;
+            document.getElementById('date').textContent = dateStr;
+        }
+
+        // Camera Setup
+        async function getCameras() {
+            try {
+                const devices = await Html5Qrcode.getCameras();
+                const select = document.getElementById('camera-select');
+                
+                if (devices && devices.length) {
+                    select.innerHTML = '<option value="">📷 Kamera Default</option>';
+                    devices.forEach((device, index) => {
+                        const option = document.createElement('option');
+                        option.value = device.id;
+                        option.text = `📹 ${device.label || `Kamera ${index + 1}`}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (err) {
+                console.error('Camera error:', err);
+            }
+        }
+
+        // Start Scanner
+        async function startScanner() {
+            const cameraId = document.getElementById('camera-select').value;
+            
+            try {
+                html5QrCode = new Html5Qrcode("reader");
+                
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                const cameraConfig = cameraId ? { deviceId: { exact: cameraId } } : { facingMode: "environment" };
+
+                await html5QrCode.start(cameraConfig, config, onScanSuccess, onScanFailure);
+                
+                isScanning = true;
+                updateUIState('online');
+                
+            } catch (err) {
+                showToast('error', 'Gagal Memulai Scanner', err.message);
+            }
+        }
+
+        // Stop Scanner
+        async function stopScanner() {
+            if (html5QrCode && isScanning) {
+                await html5QrCode.stop();
+                isScanning = false;
+                updateUIState('offline');
+            }
+        }
+
+        // Update UI State
+        function updateUIState(state) {
+            const startBtn = document.getElementById('btn-start');
+            const stopBtn = document.getElementById('btn-stop');
+            const overlay = document.getElementById('overlay-offline');
+            const scanLine = document.getElementById('scan-line');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            if (state === 'online') {
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                overlay.classList.add('hidden');
+                scanLine.classList.remove('hidden');
+                statusDot.className = 'w-3 h-3 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse';
+                statusText.textContent = 'Online';
+                statusText.className = 'text-sm font-medium text-green-400';
+            } else {
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                overlay.classList.remove('hidden');
+                scanLine.classList.add('hidden');
+                statusDot.className = 'w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50';
+                statusText.textContent = 'Offline';
+                statusText.className = 'text-sm font-medium text-red-400';
+            }
+        }
+
+        // Scan Handlers
+        function onScanSuccess(decodedText) {
+            const now = Date.now();
+            if (decodedText === lastScannedCode && (now - lastScanTime) < 3000) return;
+            
+            lastScannedCode = decodedText;
+            lastScanTime = now;
+            
+            if (currentScanMode === 'masuk') {
+                processAttendanceMasuk(decodedText);
+            } else {
+                processAttendancePulang(decodedText);
+            }
+            
+            showScanSuccess();
+            playBeep();
+        }
+
+        function onScanFailure(error) {
+            // Silent fail
+        }
+
+        // Process Absensi Masuk
+        function processAttendanceMasuk(id) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+            const today = now.toDateString();
+            
+            const existingIndex = attendanceData.findIndex(record => 
+                record.id === id && new Date(record.timestamp).toDateString() === today
+            );
+
+            let statusMasuk = 'Hadir';
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            if (hour > 8 || (hour === 8 && minute > 15)) statusMasuk = 'Terlambat';
+
+            const employee = employees[id];
+            if (!employee) {
+                showToast('error', 'ID Tidak Ditemukan', `${id} tidak terdaftar dalam sistem`);
+                return;
+            }
+
+            const record = {
+                id, 
+                name: employee.name, 
+                jurusan: employee.jurusan,
+                avatar: employee.avatar, 
+                color: employee.color,
+                jamMasuk: timeStr,
+                jamPulang: null,
+                statusMasuk: statusMasuk,
+                statusPulang: null,
+                timestamp: now.toISOString(),
+                date: today
+            };
+
+            if (existingIndex >= 0) {
+                // Update hanya jam masuk jika sudah ada
+                attendanceData[existingIndex].jamMasuk = timeStr;
+                attendanceData[existingIndex].statusMasuk = statusMasuk;
+                showToast('info', 'Jam Masuk Diperbarui', `${employee.name} - ${statusMasuk}`);
+            } else {
+                attendanceData.unshift(record);
+                showToast('success', 'Absensi Masuk Berhasil', `${employee.name} ${statusMasuk.toLowerCase()}`);
+            }
+
+            saveAttendanceData();
+            renderAttendanceList();
+            updateStatistics();
+            showRecentActivity('masuk', employee.name, statusMasuk, timeStr);
+        }
+
+        // Process Absensi Pulang
+        function processAttendancePulang(id) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+            const today = now.toDateString();
+            
+            const existingIndex = attendanceData.findIndex(record => 
+                record.id === id && new Date(record.timestamp).toDateString() === today
+            );
+
+            const employee = employees[id];
+            if (!employee) {
+                showToast('error', 'ID Tidak Ditemukan', `${id} tidak terdaftar dalam sistem`);
+                return;
+            }
+
+            if (existingIndex < 0) {
+                showToast('warning', 'Belum Absen Masuk', `${employee.name} belum melakukan absensi masuk hari ini`);
+                return;
+            }
+
+            const record = attendanceData[existingIndex];
+            
+            // Hitung total jam kerja
+            const jamMasuk = record.jamMasuk;
+            const totalJam = calculateWorkingHours(jamMasuk, timeStr);
+            
+            // Tentukan status pulang (cepat/pulang/pulang)
+            let statusPulang = 'pulang';
+            const hour = now.getHours();
+            if (hour < 11) statusPulang = 'Pulang Cepat';
+            else if (hour >= 12) statusPulang = 'Pulang';
+
+            record.jamPulang = timeStr;
+            record.statusPulang = statusPulang;
+
+            showToast('success', 'Absensi Pulang Berhasil', `${employee.name} Status Pulang`);
+
+            saveAttendanceData();
+            renderAttendanceList();
+            updateStatistics();
+            showRecentActivity('pulang', employee.name, statusPulang, timeStr);
+        }
+
+        // Calculate Working Hours
+        function calculateWorkingHours(masuk, pulang) {
+            const [masukHour, masukMin] = masuk.split(':').map(Number);
+            const [pulangHour, pulangMin] = pulang.split(':').map(Number);
+            
+            let totalMinutes = (pulangHour * 60 + pulangMin) - (masukHour * 60 + masukMin);
+            if (totalMinutes < 0) totalMinutes += 24 * 60; // Handle overnight
+            
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            
+            return `${hours}j ${minutes}m`;
+        }
+
+        // Calculate Working Hours Decimal (for display)
+        function calculateWorkingHoursDecimal(masuk, pulang) {
+            if (!masuk || !pulang) return 0;
+            
+            const [masukHour, masukMin] = masuk.split(':').map(Number);
+            const [pulangHour, pulangMin] = pulang.split(':').map(Number);
+            
+            let totalMinutes = (pulangHour * 60 + pulangMin) - (masukHour * 60 + masukMin);
+            if (totalMinutes < 0) totalMinutes += 24 * 60;
+            
+            return (totalMinutes / 60).toFixed(1);
+        }
+
+        function processManualInput() {
+            const input = document.getElementById('manual-input');
+            const id = input.value.trim().toUpperCase();
+            if (id) {
+                if (currentScanMode === 'masuk') {
+                    processAttendanceMasuk(id);
+                } else {
+                    processAttendancePulang(id);
+                }
+                input.value = '';
+                playBeep();
+            }
+        }
+
+        // Visual Effects
+        function showScanSuccess() {
+            const overlay = document.getElementById('overlay-success');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }, 1500);
+        }
+
+        function playBeep() {
+            const audio = document.getElementById('beep-sound');
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+        }
+
+        // Toast Notification
+        function showToast(type, title, message) {
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto transform transition-all duration-300 translate-x-full`;
+            
+            let icon, colors;
+            switch(type) {
+                case 'success':
+                    icon = 'fa-check-circle';
+                    colors = 'from-green-500 to-emerald-600';
+                    break;
+                case 'error':
+                    icon = 'fa-exclamation-circle';
+                    colors = 'from-red-500 to-rose-600';
+                    break;
+                case 'warning':
+                    icon = 'fa-exclamation-triangle';
+                    colors = 'from-amber-500 to-orange-600';
+                    break;
+                default:
+                    icon = 'fa-info-circle';
+                    colors = 'from-blue-500 to-cyan-600';
+            }
+            
+            toast.innerHTML = `
+                <div class="bg-gradient-to-r ${colors} text-white px-6 py-4 rounded-2xl shadow-2xl mb-3 flex items-center gap-4 min-w-[300px] border border-white/20">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fas ${icon} text-xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-sm">${title}</h4>
+                        <p class="text-xs text-white/90 mt-0.5">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-white/70 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 10);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Save & Load Data
+        function saveAttendanceData() {
+            localStorage.setItem('attendanceDataV2', JSON.stringify(attendanceData));
+            document.getElementById('last-updated').innerHTML = `
+                <i class="fas fa-sync-alt text-green-400"></i>
+                <span>Terakhir update: ${new Date().toLocaleTimeString('id-ID')}</span>
+            `;
+        }
+
+        function loadAttendanceData() {
+            const saved = localStorage.getItem('attendanceDataV2');
+            if (saved) {
+                attendanceData = JSON.parse(saved);
+            }
+        }
+
+        // Render Attendance List
+        function renderAttendanceList() {
+            const tbody = document.getElementById('attendance-list');
+            const today = new Date().toDateString();
+            
+            const todayRecords = attendanceData.filter(record => 
+                new Date(record.timestamp).toDateString() === today
+            );
+            
+            if (todayRecords.length === 0) {
+                tbody.innerHTML = `
+                    <tr id="empty-state">
+                        <td colspan="7" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center gap-4">
+                                <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center animate-pulse">
+                                    <i class="fas fa-inbox text-4xl text-gray-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400 text-lg font-medium">Belum ada data absensi</p>
+                                    <p class="text-gray-600 text-sm mt-1">Scan barcode untuk memulai pencatatan</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = todayRecords.map((record, index) => {
+                const emp = employees[record.id] || { avatar: '??', color: 'from-gray-500 to-gray-600' };
+                const jam = record.jamMasuk && record.jamPulang 
+                    ? calculateWorkingHours(record.jamMasuk, record.jamPulang)
+                    : '-';
+                
+                let statusBadge = '';
+                if (record.statusMasuk === 'Terlambat') {
+                    statusBadge = `<span class="badge-terlambat px-3 py-1 rounded-full text-xs font-bold text-white">Terlambat</span>`;
+                } else if (record.statusMasuk === 'Hadir') {
+                    statusBadge = `<span class="badge-hadir px-3 py-1 rounded-full text-xs font-bold text-white">Hadir</span>`;
+                }
+                
+                let pulangBadge = '';
+                if (record.jamPulang) {
+                    if (record.statusPulang === 'Pulang') {
+                        pulangBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-purple-500 to-pink-500">pulang</span>`;
+                    } else if (record.statusPulang === 'Pulang Cepat') {
+                        pulangBadge = `<span class="px-3 py-1 rounded-full text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500">Cepat</span>`;
+                    } else {
+                        pulangBadge = `<span class="badge-pulang px-3 py-1 rounded-full text-xs font-bold text-white">Normal</span>`;
+                    }
+                }
+                
+                return `
+                    <tr class="group hover:bg-white/5 transition-all">
+                        <td class="px-4 py-4 text-gray-400">${index + 1}</td>
+                        <td class="px-4 py-4 font-mono text-blue-400">${record.id}</td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br ${emp.color} flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                                    ${emp.avatar}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-white">${record.name}</div>
+                                    <div class="text-xs text-gray-500">${record.jurusan}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <div class="text-white font-mono">${record.jamMasuk || '-'}</div>
+                            ${statusBadge}
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <div class="text-white font-mono">${record.jamPulang || '-'}</div>
+                            ${pulangBadge}
+                        </td>
+                        <td class="px-4 py-4 text-center">
+                            <button onclick="deleteRecord('${record.id}')" class="text-red-400 hover:text-red-300 transition-colors p-2 hover:bg-red-500/10 rounded-lg">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function deleteRecord(id) {
+            if (confirm('Hapus data ini?')) {
+                const today = new Date().toDateString();
+                attendanceData = attendanceData.filter(record => 
+                    !(record.id === id && new Date(record.timestamp).toDateString() === today)
+                );
+                saveAttendanceData();
+                renderAttendanceList();
+                updateStatistics();
+                showToast('success', 'Data Dihapus', 'Record berhasil dihapus');
+            }
+        }
+
+        // Update Statistics
+        function updateStatistics() {
+            const today = new Date().toDateString();
+            const todayRecords = attendanceData.filter(record => 
+                new Date(record.timestamp).toDateString() === today
+            );
+            
+            const sudahMasuk = todayRecords.filter(r => r.jamMasuk).length;
+            const sudahPulang = todayRecords.filter(r => r.jamPulang).length;
+            
+            document.getElementById('stat-masuk').textContent = sudahMasuk;
+            document.getElementById('stat-pulang').textContent = sudahPulang;
+        }
+
+        // Show Recent Activity
+        function showRecentActivity(type, name, status, time,) {
+            const panel = document.getElementById('recent-panel');
+            const title = document.getElementById('recent-title');
+            const content = document.getElementById('recent-content');
+            const timeDisplay = document.getElementById('recent-time');
+            
+            panel.classList.remove('hidden');
+            
+            if (type === 'masuk') {
+                title.textContent = 'Absensi Masuk Berhasil';
+                content.innerHTML = `<span class="text-white font-semibold">${name}</span> <span class="text-gray-400">• ${status}</span>`;
+                panel.className = 'glass-card rounded-3xl p-6 border-l-4 border-emerald-500 slide-in mt-6';
+            } else {
+                title.textContent = 'Absensi Pulang Berhasil';
+                content.innerHTML = `<span class="text-white font-semibold">${name}</span> <span class="text-gray-400">• ${status}</span>`;
+                panel.className = 'glass-card rounded-3xl p-6 border-l-4 border-blue-500 slide-in mt-6';
+            }
+            
+            timeDisplay.textContent = time;
+            
+            // Hide after 5 seconds
+            setTimeout(() => {
+                panel.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Export Data
+        function exportData() {
+            const today = new Date().toDateString();
+            const todayRecords = attendanceData.filter(record => 
+                new Date(record.timestamp).toDateString() === today
+            );
+            
+            if (todayRecords.length === 0) {
+                showToast('warning', 'Tidak Ada Data', 'Belum ada data untuk diexport');
+                return;
+            }
+            
+            let csv = 'No,Nipd,Nama,jurusan,Jam Masuk,Status Masuk,Jam Pulang,Status Pulang\\n';
+            todayRecords.forEach((record, index) => {
+                csv += `${index + 1},${record.nipd},${record.name},${record.jurusan},${record.jamMasuk || ''},${record.statusMasuk || ''},${record.jamPulang || ''},${record.statusPulang || ''}\\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `absensi-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            
+            showToast('success', 'Export Berhasil', 'Data berhasil diexport ke CSV');
+        }
+
+        // Clear All Data
+        function clearAllData() {
+            if (confirm('Hapus semua data absensi hari ini?')) {
+                const today = new Date().toDateString();
+                attendanceData = attendanceData.filter(record => 
+                    new Date(record.timestamp).toDateString() !== today
+                );
+                saveAttendanceData();
+                renderAttendanceList();
+                updateStatistics();
+                showToast('success', 'Data Dihapus', 'Semua data hari ini telah dihapus');
+            }
+        }
+
+        // Generator Functions
+        function selectEmployee(id, name, jurusan) {
+            document.getElementById('gen-id').value = id;
+            document.getElementById('gen-name').value = name;
+            document.getElementById('gen-jurusan').value = jurusan;
+            updatePreview();
+            generateBarcode();
+        }
+
+        function updatePreview() {
+            const id = document.getElementById('gen-id').value;
+            const name = document.getElementById('gen-name').value;
+            const jurusan = document.getElementById('gen-jurusan').value;
+            
+            if (id && name) {
+                document.getElementById('preview-name').textContent = name;
+                document.getElementById('preview-id').textContent = `ID: ${id}`;
+                document.getElementById('preview-jurusan').textContent = jurusan;
+            }
+        }
+
+        function generateBarcode() {
+            const id = document.getElementById('gen-id').value.trim();
+            const name = document.getElementById('gen-name').value.trim();
+            
+            if (!id || !name) {
+                showToast('error', 'Data Tidak Lengkap', 'Harap isi NIPD dan Nama Siswa');
+                return;
+            }
+            
+            currentGeneratedId = id;
+            
+            // Show preview, hide empty state
+            document.getElementById('preview-container').classList.remove('hidden');
+            document.getElementById('preview-empty').classList.add('hidden');
+            
+            // Generate QR Code
+            const qrContainer = document.getElementById('qrcode-display');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: id,
+                width: 200,
+                height: 200,
+                colorDark: '#1e293b',
+                colorLight: '#f8fafc',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Generate 1D Barcode
+            JsBarcode('#barcode-display', id, {
+                format: 'CODE128',
+                lineColor: '#1e293b',
+                background: '#ffffff',
+                width: 2,
+                height: 80,
+                displayValue: true,
+                fontSize: 16,
+                font: 'monospace'
+            });
+            
+            showToast('success', 'Barcode Generated', `Barcode untuk ${name} berhasil dibuat`);
+        }
+
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode-display canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `qr-${currentGeneratedId}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                showToast('success', 'Downloaded', 'QR Code berhasil didownload');
+            }
+        }
+
+        function downloadBarcode() {
+            const svg = document.getElementById('barcode-display');
+            if (svg) {
+                const serializer = new XMLSerializer();
+                const svgData = serializer.serializeToString(svg);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const link = document.createElement('a');
+                    link.download = `barcode-${currentGeneratedId}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    showToast('success', 'Downloaded', 'Barcode berhasil didownload');
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+            }
+        }
+
+        // Rekap Functions
+        function loadRekap() {
+            const dateInput = document.getElementById('rekap-date').value;
+            if (!dateInput) return;
+            
+            const selectedDate = new Date(dateInput).toDateString();
+            const filteredData = attendanceData.filter(record => 
+                new Date(record.timestamp).toDateString() === selectedDate
+            );
+            
+            // Update summary
+            const total = Object.keys(employees).length;
+            const masuk = filteredData.filter(r => r.jamMasuk).length;
+            const pulang = filteredData.filter(r => r.jamPulang).length;
+            const terlambat = filteredData.filter(r => r.statusMasuk === 'Terlambat').length;
+            
+            document.getElementById('rekap-total').textContent = total;
+            document.getElementById('rekap-masuk').textContent = masuk;
+            document.getElementById('rekap-pulang').textContent = pulang;
+            document.getElementById('rekap-terlambat').textContent = terlambat;
+            
+            // Render table
+            const tbody = document.getElementById('rekap-list');
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            Tidak ada data untuk tanggal ini
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredData.map((record, index) => {
+                const totalJam = record.jamMasuk && record.jamPulang 
+                    ? calculateWorkingHoursDecimal(record.jamMasuk, record.jamPulang)
+                    : '-';
+                
+                let statusClass = 'text-gray-400';
+                let statusText = 'Belum Absen';
+                
+                if (record.jamPulang) {
+                    statusClass = 'text-blue-400';
+                    statusText = 'Hadir';
+                } else if (record.jamMasuk) {
+                    statusClass = 'text-emerald-400';
+                    statusText = 'Masuk';
+                }
+                
+                return `
+                    <tr class="hover:bg-white/5 transition-all">
+                        <td class="px-6 py-4 text-gray-400">${index + 1}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-white">${record.name}</div>
+                            <div class="text-xs text-gray-500">${record.id} • ${record.jurusan}</div>
+                        </td>
+                        <td class="px-6 py-4 text-center font-mono text-emerald-400">${record.jamMasuk || '-'}</td>
+                        <td class="px-6 py-4 text-center font-mono text-blue-400">${record.jamPulang || '-'}</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="${statusClass} font-semibold text-sm">${statusText}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportRekap() {
+            const dateInput = document.getElementById('rekap-date').value;
+            if (!dateInput) {
+                showToast('warning', 'Pilih Tanggal', 'Silakan pilih tanggal terlebih dahulu');
+                return;
+            }
+            
+            const selectedDate = new Date(dateInput).toDateString();
+            const filteredData = attendanceData.filter(record => 
+                new Date(record.timestamp).toDateString() === selectedDate
+            );
+            
+            if (filteredData.length === 0) {
+                showToast('warning', 'Tidak Ada Data', 'Tidak ada data untuk tanggal ini');
+                return;
+            }
+            
+            let csv = 'Rekap Absensi Tanggal: ' + dateInput + '\\n\\n';
+            csv += 'No,Nipd,Nama,Jurusan,Jam Masuk,Jam Pulang,Status\\n';
+            
+            filteredData.forEach((record, index) => {
+                const Jam = record.jamMasuk && record.jamPulang 
+                    ? calculateWorkingHoursDecimal(record.jamMasuk, record.jamPulang)
+                    : '';
+                let status = 'Belum Absen';
+                if (record.jamPulang) status = 'Hadir';
+                else if (record.jamMasuk) status = 'Masuk';
+                
+                csv += `${index + 1},${record.nipd},${record.name},${record.jurusan},${record.jamMasuk || ''},${record.jamPulang || ''},${status}\\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rekap-absensi-${dateInput}.csv`;
+            a.click();
+            
+            showToast('success', 'Export Berhasil', 'Rekap berhasil diexport');
+        }
+    </script>
+</body>
+</html>
